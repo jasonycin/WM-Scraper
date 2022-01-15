@@ -1,0 +1,21 @@
+{
+  "name": "wm-classes",
+  "version": "1.0.1",
+  "description": "Easily scrape courses from the William & Mary course list and save them to a CSV or JSON file.",
+  "main": "scraper.js",
+  "types": "scraper.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["scraper", "w&m", "courselist", "courses", "william & mary", "wm"],
+  "author": "jalapierre@wm.edu",
+  "license": "CC BY 4.0",
+  "dependencies": {
+    "jsdom": "^19.0.0",
+    "node-fetch": "^2.6.6",
+    "objects-to-csv": "^1.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.8"
+  }
+}
