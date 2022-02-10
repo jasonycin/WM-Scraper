@@ -1,9 +1,8 @@
 import * as fs from "fs";
-
 const fetch = require('node-fetch');
+const ObjectsToCsv = require('objects-to-csv');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
-const ObjectsToCsv = require('objects-to-csv');
 
 export interface IRateLimit {
     _interval: number,
@@ -13,6 +12,20 @@ export interface IRateLimit {
 export interface IData {
     term?: number,
     subjects?: string[]
+}
+
+export interface IJsonClass {
+    _crn: number,
+    _courseID: string,
+    _attributes: string[],
+    _title: string,
+    _instructor: string,
+    _credits: number,
+    _times: string,
+    _projectedEnrollment: number,
+    _currentEnrollment: number,
+    _seatsAvailable: number,
+    _status: boolean
 }
 
 export class Scraper {
@@ -100,7 +113,7 @@ export class Scraper {
 
         // Extract the latest term choice
         const termChildren = dom.window.document.getElementById('term_code').children
-        const term = termChildren[termChildren.length - 1].value;
+        const term = termChildren[termChildren.length - 2].value;
 
         // Extract the subject dropdown into an array.
         const subjectsChildren = dom.window.document.getElementById('term_subj').children
@@ -199,8 +212,99 @@ export class Scraper {
         await csv.toDisk(`./${filename}.csv`);
     }
 
-    public async saveToJson(filename: string) {
+    public saveToJson(filename: string) {
         fs.writeFileSync(`./${filename}.json`, JSON.stringify(this.classData, null, 4));
+    }
+
+    public async loadFromJson(filepath: string) {
+        let data: IJsonClass[];
+
+        try {
+            data =  JSON.parse(fs.readFileSync(filepath, 'utf8'));
+        } catch (e) {
+            throw new Error(`Error loading JSON file: ${e}`);
+        }
+
+        // Empty current data if present
+        if (this.classData) this.classData = [];
+
+        // Populate classData with the loaded data
+        for (const entry of data) {
+            this.classData.push(new Class(
+                entry._crn.toString(),
+                entry._courseID,
+                entry._attributes,
+                entry._title,
+                entry._instructor,
+                entry._credits,
+                entry._times,
+                entry._projectedEnrollment,
+                entry._currentEnrollment,
+                entry._seatsAvailable,
+                entry._status ? 'OPEN' : 'CLOSED'
+            ))
+        }
+    }
+
+    public findClassByCrn(crn: string) {
+        for (const classEntry of this.classData) {
+            if (classEntry.crn === crn) {
+                return classEntry;
+            }
+        }
+    }
+
+    public findClassByCourseID(courseID: string) {
+        for (const classEntry of this.classData) {
+            if (classEntry.courseID === courseID) {
+                return classEntry;
+            }
+        }
+    }
+
+    public findClassesByAttribute(attribute: string) {
+        let foundClasses: Class[] = [];
+        for (const classEntry of this.classData) {
+            if (classEntry.attributes.includes(attribute)) {
+                foundClasses.push(classEntry);
+            }
+        }
+        return foundClasses;
+    }
+
+    public findClassesByInstructor(instructor: string) {
+        // Return an array of classes that match the instructor
+        return this.classData.filter(classEntry => classEntry.instructor === instructor);
+    }
+
+    public findClassesByCredits(credits: number) {
+        // Return an array of classes that match the credits
+        return this.classData.filter(classEntry => classEntry.credits === credits);
+    }
+
+    public findClassesByTimes(times: string) {
+        // Return an array of classes that match the times
+        return this.classData.filter(classEntry => classEntry.times === times);
+    }
+
+    public findClassesByProjectedEnrollment(projectedEnrollment: number) {
+        // Return an array of classes that match the projected enrollment
+        return this.classData.filter(classEntry => classEntry.projectedEnrollment === projectedEnrollment);
+    }
+
+    public findClassesByCurrentEnrollment(currentEnrollment: number) {
+        // Return an array of classes that match the current enrollment
+        return this.classData.filter(classEntry => classEntry.currentEnrollment === currentEnrollment);
+    }
+
+    public findClassesBySeatsAvailable(seatsAvailable: number) {
+        // Return an array of classes that match the seats available
+        return this.classData.filter(classEntry => classEntry.seatsAvailable === seatsAvailable);
+    }
+
+    public findClassesByStatus(status: boolean) {
+        // Return an array of classes that match the status
+        return this.classData.filter(classEntry => classEntry.status === status);
     }
 }
 
@@ -272,7 +376,11 @@ export class Class {
     }
 
     set credits(credits: number) {
-        this._credits = parseInt(credits.toString().replace(/(\r\n|\n|\r)/gm, "").trim());
+        if (credits === null) {
+            this._credits = null;
+        } else {
+            this._credits = parseInt(credits.toString().replace(/(\r\n|\n|\r)/gm, "").trim());
+        }
     }
 
     get credits(): number {
@@ -315,7 +423,7 @@ export class Class {
         return this._seatsAvailable;
     }
 
-    set status(status: string) {
+    set status(status: string | boolean) {
         switch (status) {
             case 'OPEN':
                 this._status = true;
@@ -328,8 +436,8 @@ export class Class {
         }
     }
 
-    get status(): string {
-        return this._status.toString();
+    get status(): boolean {
+        return this._status;
     }
 
 }
