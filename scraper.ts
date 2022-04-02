@@ -93,8 +93,7 @@ export class Scraper {
 
     private async _logAndExecuteRateLimit() {
         // Calculate time since last request
-        const now = Date.now();
-        const diff = now - this.rateLimit;
+        const diff = Date.now() - this.rateLimit;
 
         // If the rate limit has been exceeded, force thread execution to halt until the rate limit is met.
         if (diff < this.rateLimit) {
