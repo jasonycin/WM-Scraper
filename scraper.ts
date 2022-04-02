@@ -1,8 +1,24 @@
 import * as fs from "fs";
+import {LogLevel} from "typedoc";
 const fetch = require('node-fetch');
 const ObjectsToCsv = require('objects-to-csv');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const winston = require('winston');
+
+const logger = require('winston').createLogger({
+    transports: [
+        new(winston.transports.Console)({
+            colorize: true,
+            timestamp: true,
+            prettyPrint: true
+        })
+    ],
+    format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.printf(info => `${new Date().toLocaleDateString()} ${new Date().toLocaleDateString()} ${info.level}: ${info.message}`)
+    )
+})
 
 export interface IRateLimit {
     _interval: number,
@@ -42,7 +58,7 @@ class ScraperError extends Error {
 export class Scraper {
     private _userAgent: string;
     private _rateLimit: IRateLimit = {
-        _interval: 1000,
+        _interval: 500,
         _lastRequest: 0 // Date.now() millisecond timestamp
     };
     public courselistData: IData = {
@@ -62,7 +78,7 @@ export class Scraper {
     public set userAgent(userAgent: string) {
         // User agent must be @email.wm.edu or @wm.edu email address.
         if(!/^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(wm|email.wm)\.edu$/g.test(userAgent)) {
-            throw new Error('Invalid user agent. Must be a W&M email address.');
+            throw new ScraperError('Invalid user agent. Must be a W&M email address.');
         }
 
         this._userAgent = userAgent;
@@ -79,7 +95,7 @@ export class Scraper {
      */
     public set rateLimit(ms: number) {
         if (ms < 500)
-            console.log(`WARNING: Rate limit set to ${ms}ms. You are responsible for setting a reasonable rate limit.`);
+            logger.warn(`Rate limit set to ${ms}ms. You are responsible for setting a reasonable rate limit.`);
 
         this._rateLimit._interval = ms;
     }
@@ -91,6 +107,16 @@ export class Scraper {
         return this._rateLimit._interval;
     }
 
+    public set logging(bool: boolean) {
+        if (typeof bool !== 'boolean') throw new ScraperError(`Logging can be set to true or false (boolean). You passed a ${typeof bool} argument.`);
+        bool ? logger.silent = false : logger.silent = true;
+    }
+
+    /**
+     * Enforces the rate limit by seeing if it has exceeded the set interval.
+     * If so, it halts thread execution for the remaining time.
+     * @private
+     */
     private async _logAndExecuteRateLimit() {
         // Calculate time since last request
         const diff = Date.now() - this.rateLimit;
@@ -105,6 +131,10 @@ export class Scraper {
         this._rateLimit._lastRequest = Date.now();
     }
 
+
+    /**
+     * Retrieves the current term and subject list from the W&M website.
+     */
     public async getTermAndSubjects() {
         // Enforce rate limit
         await this._logAndExecuteRateLimit();
@@ -141,17 +171,32 @@ export class Scraper {
     /**
      *
      * @param subjectCode - If not provided, will extract information for all course subjects.
+     * @param term -
      */
-    public async retrieveSubjectData(subjectCode?: string) {
-        // Guard clauses
-        if (!this.courselistData.term) {
-            throw new Error('Term not set. Call retrieveTermAndSubjects() first.');
+    public async getCourseData(subjectCode?: string, term?: number) {
+        // If no custom term has been defined or gotten via getTermAndSubjects(), attempt to retrieve it.
+        if (!term && !this.courselistData.term) {
+            logger.warn('No term set. Attempting to get term from Open Course List...');
+            await this.getTermAndSubjects();
+
+            // Check for successful retrieval.
+            if (this.courselistData.term) logger.info(`Term set to ${this.courselistData.term}`);
+            else throw new ScraperError('Unable to get term from Open Course List.');
+
         }
 
         // If a parameter was provided, retrieve information for that subject only.
         if (subjectCode) {
-            // Retrieve the entire HTML page from the Course List for the given subject.
-            const url = `https://courselist.wm.edu/courselist/courseinfo/searchresults?term_code=${this.courselistData.term}&term_subj=${subjectCode}&attr=0&attr2=0&levl=0&status=0&ptrm=0&search=Search`
+            // See if subject code is in courselistData.
+            if (!this.courselistData.subjects.includes(subjectCode)) throw new ScraperError(`Subject code ${subjectCode} is not found. Have you called getTermAndSubjects()?`);
+
+            await this._logAndExecuteRateLimit();
+
+            /**
+             * Retrieve the entire HTML page from the Course List for the given subject.
+             * Uses a custom term if one was provided.
+             */
+            const url = `https://courselist.wm.edu/courselist/courseinfo/searchresults?term_code=${term ? term : this.courselistData.term}&term_subj=${subjectCode}&attr=0&attr2=0&levl=0&status=0&ptrm=0&search=Search`
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -178,7 +223,7 @@ export class Scraper {
             }
         } else { // If no specific subject was given, get all.
             for (const subject of this.courselistData.subjects) {
-                await this.retrieveSubjectData(subject);
+                await this.getCourseData(subject, term ? term : this.courselistData.term);
             }
         }
     }

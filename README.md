@@ -5,7 +5,7 @@ This is a high-level scrapper for the course list of the College of William and 
 found [here](https://courselist.wm.edu/courselist/courseinfo/search?). This is not the most performant scrapper as it saves
 each class as an object in memory. Feel free to send a pull request with enhancements!
 
- In addition, this scrapper **requires setting a user agent with a W&M email address** and sets a **default rate limit of 500 milliseconds**.
+In addition, this scrapper **requires setting a user agent with a W&M email address** and sets a **default rate limit of 500 milliseconds**.
 This identifies your requests to the W&M servers and prevents mistakenly overloading the server with requests.
 
 ### Table of Contents
@@ -16,6 +16,7 @@ This identifies your requests to the W&M servers and prevents mistakenly overloa
    4. 💾 [Save Data](#save-data)
    5. 🔎 [Find Data Easily](#find-data-easily)
 2. 🔃 [Load `.json` Data](#load-json-course-data)
+3. 🪵 [Logging](#logging)
 
 ### Usage
 #### Installation
@@ -53,16 +54,16 @@ async function doStuff() {
      * 
      * ⛔️ YOU MUST DO THIS FIRST!
      */
-    await scraper.retrieveTermAndSubjects();
+    await scraper.getTermAndSubjects();
 
     /**
      * Chose to get a specific subject
      */
-    await scraper.retrieveSubjectData('BIOL');
+    await scraper.getCourseData('BIOL');
     /**
      * OR get all subjects (which we retrieved earlier)
      */
-    await scraper.retrieveSubjectData();
+    await scraper.getCourseData();
 
     /**
      * You can now view the results.
@@ -111,4 +112,10 @@ instead of hitting the W&M Open Course List repeatedly. Please use this as often
 await scraper.loadFromJson('./courses.json');
 ```
 
+### Logging
+This library uses the [Winston](https://www.npmjs.com/package/winston) for logging. It is on by default but can be turned off.
+```TypeScript
+scraper.logging = false; // Turn off logging
+scraper.logging = true; // Turn on logging
+```
 
