@@ -28,6 +28,17 @@ export interface IJsonClass {
     _status: boolean
 }
 
+/**
+ * Custom Error Class for Scraper
+ */
+class ScraperError extends Error {
+    constructor(message: string) {
+        super(`W&M Scrapper Error: ${message}`);
+        this.name = this.constructor.name;
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
+
 export class Scraper {
     private _userAgent: string;
     private _rateLimit: IRateLimit = {
@@ -95,7 +106,7 @@ export class Scraper {
         this._rateLimit._lastRequest = Date.now();
     }
 
-    public async retrieveTermAndSubjects() {
+    public async getTermAndSubjects() {
         // Enforce rate limit
         await this._logAndExecuteRateLimit();
 
