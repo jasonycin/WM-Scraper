@@ -302,7 +302,7 @@ export class Scraper {
         return this.classData.filter(classEntry => classEntry.seatsAvailable === seatsAvailable);
     }
 
-    public findClassesByStatus(status: boolean) {
+    public findClassesByStatus(status: 'OPEN' | 'CLOSED') {
         // Return an array of classes that match the status
         return this.classData.filter(classEntry => classEntry.status === status);
     }
@@ -319,7 +319,7 @@ export class Class {
     private _projectedEnrollment: number;
     private _currentEnrollment: number;
     private _seatsAvailable: number;
-    private _status: boolean;
+    private _status: string;
 
     constructor(crn?: string, courseID?: string, attributes?: string[], title?: string, instructor?: string, credits?: number, times?: string, projectedEnrollment?: number, currentEnrollment?: number, seatsAvailable?: number, status?: string) {
         this.crn = crn;
@@ -395,22 +395,43 @@ export class Class {
         return this._times;
     }
 
+    /**
+     * Sets the projected number of available spots in an individual class as a number.
+     * Removes special characters such as newlines, return carriages, asterisks, etc.
+     * @param projectedEnrollment
+     */
     set projectedEnrollment(projectedEnrollment: number) {
         this._projectedEnrollment = parseInt(projectedEnrollment.toString().replace(/(\r\n|\n|\r)/gm, "").trim());
     }
 
+    /**
+     * Returns the projected number of available spots in an individual class as a number.
+     */
     get projectedEnrollment(): number {
         return this._projectedEnrollment;
     }
 
+    /**
+     * Sets the current number of enrolled students in an individual class as a number.
+     * Removes special characters such as newlines, return carriages, asterisks, etc.
+     * @param currentEnrollment
+     */
     set currentEnrollment(currentEnrollment: number) {
         this._currentEnrollment = parseInt(currentEnrollment.toString().replace(/(\r\n|\n|\r)/gm, "").trim());
     }
 
+    /**
+     * Returns the number of current enrollment in an individual class as a number.
+     */
     get currentEnrollment(): number {
         return this._currentEnrollment;
     }
 
+    /**
+     * Sets the current number of available seats in an individual class.
+     * Removes special characters such as newlines, return carriages, asterisks, etc.
+     * @param seatsAvailable
+     */
     set seatsAvailable(seatsAvailable: number) {
         this._seatsAvailable = parseInt(seatsAvailable
             .toString()
@@ -419,25 +440,35 @@ export class Class {
             .trim());
     }
 
+    /**
+     * Returns the number of seats available in an individual class as a number.
+     */
     get seatsAvailable(): number {
         return this._seatsAvailable;
     }
 
-    set status(status: string | boolean) {
-        switch (status) {
-            case 'OPEN':
-                this._status = true;
-                break;
-            case 'CLOSED':
-                this._status = false;
-                break;
-            default:
-                throw new Error('Invalid status');
-        }
+    /**
+     * Set the status of a class. Must be 'OPEN' or 'CLOSED'.
+     * @param status
+     */
+    set status(status: string) {
+        // Guard clause
+        if (status != 'OPEN' && status != 'CLOSED') throw new Error('Incorrect status type. Must be OPEN or CLOSED.')
+        this._status = status;
     }
 
-    get status(): boolean {
+    /**
+     * Get the status of an individual class as the string defined by Open Course List (OPEN or CLOSED.)
+     */
+    get status(): string {
         return this._status;
+    }
+
+    /**
+     * Get the status of an individual class as boolean. OPEN returns true whereas CLOSED returns false.
+     */
+    get statusAsBool(): boolean {
+        return this._status == 'OPEN';
     }
 
 }
