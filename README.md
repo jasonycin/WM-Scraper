@@ -17,6 +17,7 @@ This identifies your requests to the W&M servers and prevents mistakenly overloa
    5. 🔎 [Find Data Easily](#find-data-easily)
 2. 🔃 [Load `.json` Data](#load-json-course-data)
 3. 🪵 [Logging](#logging)
+4. 👏 [Author](#author)
 
 ### Usage
 #### Installation
@@ -117,4 +118,8 @@ This library uses [Winston](https://www.npmjs.com/package/winston) for logging. 
 scraper.logging = false; // Turn off logging
 scraper.logging = true; // Turn on logging
 ```
+### Author
+Jason LaPierre ([jalapierre@wm.edu](mailto:jalapierre@wm.edu))  
+Biology '25
 
+Please feel free to reach out to me with any questions or suggestions! 👏👏
