@@ -48,16 +48,15 @@ import * as wm from 'wm-classes/scraper';
 const scraper = new wm.Scraper('abcdef@wm.edu')
 
 async function doStuff() {
-    /**
-     * Retrieves the term and subjects from the courselist.
-     * Verify result with: console.log(scraper.courselistData)
-     * 
-     * ⛔️ YOU MUST DO THIS FIRST!
-     */
-    await scraper.getTermAndSubjects();
+   /**
+    * 1. Get all terms and subjects
+    * ✨ You can now skip this step!
+    */
+   await scraper.getTermsAndSubjects();
+   console.log(scraper.courselistData) // Object with terms and subjects
 
-    /**
-     * Chose to get a specific subject
+   /**
+     * 2. Chose to get a specific subject
      */
     await scraper.getCourseData('BIOL');
     /**
@@ -66,7 +65,7 @@ async function doStuff() {
     await scraper.getCourseData();
 
     /**
-     * You can now view the results.
+     * 3. You can now view the results.
      * Each class is saved as an object.
      */
     console.log(scraper.classData);
@@ -113,7 +112,7 @@ await scraper.loadFromJson('./courses.json');
 ```
 
 ### Logging
-This library uses the [Winston](https://www.npmjs.com/package/winston) for logging. It is on by default but can be turned off.
+This library uses [Winston](https://www.npmjs.com/package/winston) for logging. It is on by default but can be turned off.
 ```TypeScript
 scraper.logging = false; // Turn off logging
 scraper.logging = true; // Turn on logging

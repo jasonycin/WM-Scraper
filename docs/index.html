@@ -6,11 +6,27 @@
 <a href="#information" id="information" style="color: inherit; text-decoration: none;">
   <h3>Information</h3>
 </a>
-<p>This is a low-level scrapper for the course list of the College of William and Mary. It can be used to quickly retrieve all courses
+<p>This is a high-level scrapper for the course list of the College of William and Mary. It can be used to quickly retrieve all courses
 found <a href="https://courselist.wm.edu/courselist/courseinfo/search?">here</a>. This is not the most performant scrapper as it saves
 each class as an object in memory. Feel free to send a pull request with enhancements!</p>
-<p> In addition, this scrapper <strong>requires setting a user agent with a W&amp;M email address</strong> and sets a <strong>default rate limit of 500 milliseconds</strong>.
+<p>In addition, this scrapper <strong>requires setting a user agent with a W&amp;M email address</strong> and sets a <strong>default rate limit of 500 milliseconds</strong>.
 This identifies your requests to the W&amp;M servers and prevents mistakenly overloading the server with requests.</p>
+
+<a href="#table-of-contents" id="table-of-contents" style="color: inherit; text-decoration: none;">
+  <h3>Table of Contents</h3>
+</a>
+<ol>
+<li>🧑‍🏫 <a href="#usage">Usage</a><ol>
+<li>👷‍♂️<a href="#installation">Installation</a></li>
+<li>🏗️ <a href="#instantiation">Instantiation</a></li>
+<li>🖥️ <a href="#get-data-from-open-course-list">Get Data from Open Course List</a></li>
+<li>💾 <a href="#save-data">Save Data</a></li>
+<li>🔎 <a href="#find-data-easily">Find Data Easily</a></li>
+</ol>
+</li>
+<li>🔃 <a href="#load-json-course-data">Load <code>.json</code> Data</a></li>
+<li>🪵 <a href="#logging">Logging</a></li>
+</ol>
 
 <a href="#usage" id="usage" style="color: inherit; text-decoration: none;">
   <h3>Usage</h3>
@@ -33,11 +49,11 @@ This identifies your requests to the W&amp;M servers and prevents mistakenly ove
 <pre><code class="language-ts"><span class="hl-1">// TODO: Replace user agent string</span><br/><span class="hl-3">const</span><span class="hl-0"> </span><span class="hl-6">scraper</span><span class="hl-0"> = </span><span class="hl-3">new</span><span class="hl-0"> </span><span class="hl-4">wm</span><span class="hl-0">.</span><span class="hl-7">Scraper</span><span class="hl-0">(</span><span class="hl-5">&#39;abcdef@wm.edu&#39;</span><span class="hl-0">)</span>
 </code></pre>
 
-<a href="#collect-information" id="collect-information" style="color: inherit; text-decoration: none;">
-  <h4>Collect information</h4>
+<a href="#get-data-from-open-course-list" id="get-data-from-open-course-list" style="color: inherit; text-decoration: none;">
+  <h4>Get Data from Open Course List</h4>
 </a>
 <p>This library uses async/await and therefore you must wrap your code in an asynchronous function to <em>await</em> data.</p>
-<pre><code class="language-ts"><span class="hl-2">import</span><span class="hl-0"> </span><span class="hl-3">*</span><span class="hl-0"> </span><span class="hl-2">as</span><span class="hl-0"> </span><span class="hl-4">wm</span><span class="hl-0"> </span><span class="hl-2">from</span><span class="hl-0"> </span><span class="hl-5">&#39;wm-classes/scraper&#39;</span><span class="hl-0">;</span><br/><span class="hl-3">const</span><span class="hl-0"> </span><span class="hl-6">scraper</span><span class="hl-0"> = </span><span class="hl-3">new</span><span class="hl-0"> </span><span class="hl-4">wm</span><span class="hl-0">.</span><span class="hl-7">Scraper</span><span class="hl-0">(</span><span class="hl-5">&#39;abcdef@wm.edu&#39;</span><span class="hl-0">)</span><br/><br/><span class="hl-3">async</span><span class="hl-0"> </span><span class="hl-3">function</span><span class="hl-0"> </span><span class="hl-7">doStuff</span><span class="hl-0">() {</span><br/><span class="hl-0">    </span><span class="hl-1">/**</span><br/><span class="hl-1">     * Retrieves the term and subjects from the courselist.</span><br/><span class="hl-1">     * Verify result with: console.log(scraper.courselistData)</span><br/><span class="hl-1">     * </span><br/><span class="hl-1">     * ⛔️ YOU MUST DO THIS FIRST!</span><br/><span class="hl-1">     */</span><br/><span class="hl-0">    </span><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">retrieveTermAndSubjects</span><span class="hl-0">();</span><br/><br/><span class="hl-0">    </span><span class="hl-1">/**</span><br/><span class="hl-1">     * Chose to get a specific subject</span><br/><span class="hl-1">     */</span><br/><span class="hl-0">    </span><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">retrieveSubjectData</span><span class="hl-0">(</span><span class="hl-5">&#39;BIOL&#39;</span><span class="hl-0">);</span><br/><span class="hl-0">    </span><span class="hl-1">/**</span><br/><span class="hl-1">     * OR get all subjects (which we retrieved earlier)</span><br/><span class="hl-1">     */</span><br/><span class="hl-0">    </span><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">retrieveSubjectData</span><span class="hl-0">();</span><br/><br/><span class="hl-0">    </span><span class="hl-1">/**</span><br/><span class="hl-1">     * You can now view the results.</span><br/><span class="hl-1">     * Each class is saved as an object.</span><br/><span class="hl-1">     */</span><br/><span class="hl-0">    </span><span class="hl-4">console</span><span class="hl-0">.</span><span class="hl-7">log</span><span class="hl-0">(</span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-4">classData</span><span class="hl-0">);</span><br/><span class="hl-0">}</span><br/><br/><span class="hl-1">// Remember to call your function!</span><br/><span class="hl-7">doStuff</span><span class="hl-0">();</span>
+<pre><code class="language-ts"><span class="hl-2">import</span><span class="hl-0"> </span><span class="hl-3">*</span><span class="hl-0"> </span><span class="hl-2">as</span><span class="hl-0"> </span><span class="hl-4">wm</span><span class="hl-0"> </span><span class="hl-2">from</span><span class="hl-0"> </span><span class="hl-5">&#39;wm-classes/scraper&#39;</span><span class="hl-0">;</span><br/><span class="hl-3">const</span><span class="hl-0"> </span><span class="hl-6">scraper</span><span class="hl-0"> = </span><span class="hl-3">new</span><span class="hl-0"> </span><span class="hl-4">wm</span><span class="hl-0">.</span><span class="hl-7">Scraper</span><span class="hl-0">(</span><span class="hl-5">&#39;abcdef@wm.edu&#39;</span><span class="hl-0">)</span><br/><br/><span class="hl-3">async</span><span class="hl-0"> </span><span class="hl-3">function</span><span class="hl-0"> </span><span class="hl-7">doStuff</span><span class="hl-0">() {</span><br/><span class="hl-0">   </span><span class="hl-1">/**</span><br/><span class="hl-1">    * 1. Get all terms and subjects</span><br/><span class="hl-1">    * ✨ You can now skip this step!</span><br/><span class="hl-1">    */</span><br/><span class="hl-0">   </span><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">getTermsAndSubjects</span><span class="hl-0">();</span><br/><span class="hl-0">   </span><span class="hl-4">console</span><span class="hl-0">.</span><span class="hl-7">log</span><span class="hl-0">(</span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-4">courselistData</span><span class="hl-0">) </span><span class="hl-1">// Object with terms and subjects</span><br/><br/><span class="hl-0">   </span><span class="hl-1">/**</span><br/><span class="hl-1">     * 2. Chose to get a specific subject</span><br/><span class="hl-1">     */</span><br/><span class="hl-0">    </span><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">getCourseData</span><span class="hl-0">(</span><span class="hl-5">&#39;BIOL&#39;</span><span class="hl-0">);</span><br/><span class="hl-0">    </span><span class="hl-1">/**</span><br/><span class="hl-1">     * OR get all subjects (which we retrieved earlier)</span><br/><span class="hl-1">     */</span><br/><span class="hl-0">    </span><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">getCourseData</span><span class="hl-0">();</span><br/><br/><span class="hl-0">    </span><span class="hl-1">/**</span><br/><span class="hl-1">     * 3. You can now view the results.</span><br/><span class="hl-1">     * Each class is saved as an object.</span><br/><span class="hl-1">     */</span><br/><span class="hl-0">    </span><span class="hl-4">console</span><span class="hl-0">.</span><span class="hl-7">log</span><span class="hl-0">(</span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-4">classData</span><span class="hl-0">);</span><br/><span class="hl-0">}</span><br/><br/><span class="hl-1">// Remember to call your function!</span><br/><span class="hl-7">doStuff</span><span class="hl-0">();</span>
 </code></pre>
 
 <a href="#save-data" id="save-data" style="color: inherit; text-decoration: none;">
@@ -46,5 +62,95 @@ This identifies your requests to the W&amp;M servers and prevents mistakenly ove
 <p>There are two built-in methods for easily saving collected data to a <strong>CSV or JSON file</strong>.
 Here&#39;s how to do both:</p>
 <pre><code class="language-ts"><span class="hl-1">// Save to CSV file</span><br/><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">saveToCsv</span><span class="hl-0">(</span><span class="hl-5">&#39;courses&#39;</span><span class="hl-0">); </span><span class="hl-1">// Saves courses.csv to current working directory.</span><br/><span class="hl-0">    </span><br/><span class="hl-1">// Save to JSON file</span><br/><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">saveToJson</span><span class="hl-0">(</span><span class="hl-5">&#39;courses&#39;</span><span class="hl-0">); </span><span class="hl-1">// Saves courses.json to current working directory.</span>
+</code></pre>
+
+<a href="#find-data-easily" id="find-data-easily" style="color: inherit; text-decoration: none;">
+  <h4>Find Data Easily</h4>
+</a>
+<p>The following functions are provided to filter, map, and return (a) result(s):<br>❗⚠️ If you already have <code>.json</code> file with course data from this library, please <a href="#load-json-course-data">load that data</a> into the scraper instead of hitting W&amp;M&#39;s servers repeatedly.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Method</th>
+<th>Purpose</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Scraper</td>
+<td>findClassByCrn()</td>
+<td>Find an individual class by CRN.</td>
+<td>String</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassByCourseID()</td>
+<td>Find an individual class by course ID.</td>
+<td>String</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesByAttribute()</td>
+<td>Find all classes with a specific attribute. Future support for passing in arrays of attributes.</td>
+<td>String[]</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesByInstructor()</td>
+<td>Find all classes with a specific instructor.</td>
+<td>String[]</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesByCredits()</td>
+<td>Find all classes with a specific number of credits.</td>
+<td>String[]</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesByTimes()</td>
+<td>Find all classes at a specific time.</td>
+<td>String[]</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesByProjectedEnrollment()</td>
+<td>Find all classes with a specific projected enrollment. Future support for getting all classes which are &gt;0.</td>
+<td>String[]</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesByCurrentEnrollment()</td>
+<td>Find all classes by their current enrollment. Future support for getting all classes which are &gt;0.</td>
+<td>String[]</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesBySeatsAvailable()</td>
+<td>Find all classes by the specific number of seats available. Future support for getting all classes which are &gt;0.</td>
+<td>String[]</td>
+</tr>
+<tr>
+<td>Scraper</td>
+<td>findClassesByStatus()</td>
+<td>Find all classes by their status. Status must be <code>OPEN</code> or <code>CLOSED</code>. Future support for passing in booleans.</td>
+<td>String[]</td>
+</tr>
+</tbody></table>
+
+<a href="#load-json-course-data" id="load-json-course-data" style="color: inherit; text-decoration: none;">
+  <h3>Load <code>.json</code> Course Data</h3>
+</a>
+<p>If you have saved course data previously to a <code>.json</code> file using <code>.saveToJson(&#39;&#39;)</code>, you can re-insert it into the Scraper
+instead of hitting the W&amp;M Open Course List repeatedly. Please use this as often as you can.</p>
+<pre><code class="language-TypeScript"><span class="hl-1">// Use the filepath for the argument.</span><br/><span class="hl-2">await</span><span class="hl-0"> </span><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-7">loadFromJson</span><span class="hl-0">(</span><span class="hl-5">&#39;./courses.json&#39;</span><span class="hl-0">);</span>
+</code></pre>
+
+<a href="#logging" id="logging" style="color: inherit; text-decoration: none;">
+  <h3>Logging</h3>
+</a>
+<p>This library uses <a href="https://www.npmjs.com/package/winston">Winston</a> for logging. It is on by default but can be turned off.</p>
+<pre><code class="language-TypeScript"><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-4">logging</span><span class="hl-0"> = </span><span class="hl-3">false</span><span class="hl-0">; </span><span class="hl-1">// Turn off logging</span><br/><span class="hl-4">scraper</span><span class="hl-0">.</span><span class="hl-4">logging</span><span class="hl-0"> = </span><span class="hl-3">true</span><span class="hl-0">; </span><span class="hl-1">// Turn on logging</span>
 </code></pre>
 </div></div><div class="col-4 col-menu menu-sticky-wrap menu-highlight"><nav class="tsd-navigation primary"><ul><li class="current"><a href="modules.html">Exports</a></li></ul></nav><nav class="tsd-navigation secondary menu-sticky"><ul><li class="tsd-kind-class"><a href="classes/Class.html" class="tsd-kind-icon">Class</a></li><li class="tsd-kind-class"><a href="classes/Scraper.html" class="tsd-kind-icon">Scraper</a></li><li class="tsd-kind-interface"><a href="interfaces/IData.html" class="tsd-kind-icon">IData</a></li><li class="tsd-kind-interface"><a href="interfaces/IJsonClass.html" class="tsd-kind-icon">IJson<wbr/>Class</a></li><li class="tsd-kind-interface"><a href="interfaces/IRateLimit.html" class="tsd-kind-icon">IRate<wbr/>Limit</a></li></ul></nav></div></div></div><footer class="with-border-bottom"><div class="container"><h2>Legend</h2><div class="tsd-legend-group"><ul class="tsd-legend"><li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li><li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li><li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li><li class="tsd-kind-accessor tsd-parent-kind-class"><span class="tsd-kind-icon">Accessor</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private property</span></li><li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private method</span></li></ul><ul class="tsd-legend"><li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li></ul></div><h2>Settings</h2><p>Theme <select id="theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></p></div></footer><div class="container tsd-generator"><p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></div><div class="overlay"></div><script src="assets/main.js"></script></body></html>

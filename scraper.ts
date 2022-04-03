@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import {LogLevel} from "typedoc";
+
 const fetch = require('node-fetch');
 const ObjectsToCsv = require('objects-to-csv');
 const jsdom = require("jsdom");
@@ -26,7 +26,10 @@ export interface IRateLimit {
 }
 
 export interface IData {
-    term?: number,
+    terms?: {
+        latest: number,
+        all: number[]
+    },
     subjects?: string[]
 }
 
@@ -55,6 +58,14 @@ class ScraperError extends Error {
     }
 }
 
+class ClassError extends Error {
+    constructor(message: string) {
+        super(`W&M Class Error: ${message}`);
+        this.name = this.constructor.name;
+        Error.captureStackTrace(this, this.constructor)
+    }
+}
+
 export class Scraper {
     private _userAgent: string;
     private _rateLimit: IRateLimit = {
@@ -62,7 +73,7 @@ export class Scraper {
         _lastRequest: 0 // Date.now() millisecond timestamp
     };
     public courselistData: IData = {
-        term: null,
+        terms: { latest: null, all: null },
         subjects: null
     };
     public classData: Class[] = [];
@@ -70,9 +81,7 @@ export class Scraper {
     constructor(userAgent: string, rateLimit?: number) {
         this.userAgent = userAgent;
 
-        if (rateLimit) {
-            this.rateLimit = rateLimit;
-        }
+        if (rateLimit) this.rateLimit = rateLimit;
     }
 
     public set userAgent(userAgent: string) {
@@ -95,7 +104,7 @@ export class Scraper {
      */
     public set rateLimit(ms: number) {
         if (ms < 500)
-            logger.warn(`Rate limit set to ${ms}ms. You are responsible for setting a reasonable rate limit.`);
+            logger.warn(`Rate limit set to ${ms}ms. You are responsible for setting a reasonable rate limit! Default is 500ms.`);
 
         this._rateLimit._interval = ms;
     }
@@ -110,6 +119,24 @@ export class Scraper {
     public set logging(bool: boolean) {
         if (typeof bool !== 'boolean') throw new ScraperError(`Logging can be set to true or false (boolean). You passed a ${typeof bool} argument.`);
         bool ? logger.silent = false : logger.silent = true;
+    }
+
+    private async httpRequest(url: string, options?: object) {
+        if (typeof options != 'object') throw new ScraperError(`Wrong data type. You passed ${typeof options}.`)
+
+        if (!options) {
+            options = {
+                method: 'GET',
+                headers: { "User-Agent": this._userAgent }
+            }
+        }
+
+        try {
+            return await fetch(url, options)
+        }
+        catch (e) {
+          throw new ScraperError(e);
+        }
     }
 
     /**
@@ -135,37 +162,31 @@ export class Scraper {
     /**
      * Retrieves the current term and subject list from the W&M website.
      */
-    public async getTermAndSubjects() {
+    public async getTermsAndSubjects() {
         // Enforce rate limit
         await this._logAndExecuteRateLimit();
 
         // Retrieve the entire HTML page from the Course List
         const url = 'https://courselist.wm.edu/courselist/courseinfo/';
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'User-Agent': this._userAgent
-            }
-        });
+        const response = await this.httpRequest(url)
 
-        // Extract the HTML from the response and parse it using JSDOM
+        /**
+         * Extract the HTML from the response and parse it using JSDOM
+         */
         const dom = new JSDOM(await response.text());
 
-        // Extract the latest term choice
-        const termChildren = dom.window.document.getElementById('term_code').children
-        const term = termChildren[termChildren.length - 2].value;
+        /**
+         * Extract the terms from the dropdown menu in the DOM.
+         */
+        const termChildren = dom.window.document.getElementById('term_code').children // HTMLCollection{}
+        this.courselistData.terms.all = [...termChildren].map(term => term.value); // Convert HTMLCollection{} to array
+        this.courselistData.terms.latest = termChildren[termChildren.length - 2].value; // The latest term in dropdown menu.
 
-        // Extract the subject dropdown into an array.
-        const subjectsChildren = dom.window.document.getElementById('term_subj').children
-        const subjectsArray = [];
-        for (let subject of subjectsChildren) {
-            subjectsArray.push(subject.value)
-        }
-        subjectsArray.shift(); // Remove the first element, which is a 0.
-
-        // Save courselistData to the scraper object.
-        this.courselistData.term = term;
-        this.courselistData.subjects = subjectsArray;
+        /**
+         * Extract the subjects from the dropdown menu in the DOM.
+         */
+        const subjectsChildren = dom.window.document.getElementById('term_subj').children // HTMLCollection{}
+        this.courselistData.subjects = [...subjectsChildren].map(subject => subject.value).slice(1) // Convert HTMLCollection{} to array and remove first item.
     }
 
     /**
@@ -174,15 +195,15 @@ export class Scraper {
      * @param term -
      */
     public async getCourseData(subjectCode?: string, term?: number) {
-        // If no custom term has been defined or gotten via getTermAndSubjects(), attempt to retrieve it.
-        if (!term && !this.courselistData.term) {
-            logger.warn('No term set. Attempting to get term from Open Course List...');
-            await this.getTermAndSubjects();
+        // If no custom term and subject has been defined or gotten via getTermAndSubjects(), attempt to retrieve it.
+        if (!this.courselistData.terms.latest && !this.courselistData.subjects) {
+            logger.warn('No term or subjects found. Attempting to get data from Open Course List...');
+            await this.getTermsAndSubjects();
 
             // Check for successful retrieval.
-            if (this.courselistData.term) logger.info(`Term set to ${this.courselistData.term}`);
-            else throw new ScraperError('Unable to get term from Open Course List.');
-
+            if (this.courselistData.terms.latest && this.courselistData.subjects) {
+                logger.info(`Subjects found (${this.courselistData.subjects.at(1)}...${this.courselistData.subjects.at(-1)}). Term set to ${this.courselistData.terms.latest}.`);
+            } else throw new ScraperError('Unable to get term from Open Course List.');
         }
 
         // If a parameter was provided, retrieve information for that subject only.
@@ -196,7 +217,7 @@ export class Scraper {
              * Retrieve the entire HTML page from the Course List for the given subject.
              * Uses a custom term if one was provided.
              */
-            const url = `https://courselist.wm.edu/courselist/courseinfo/searchresults?term_code=${term ? term : this.courselistData.term}&term_subj=${subjectCode}&attr=0&attr2=0&levl=0&status=0&ptrm=0&search=Search`
+            const url = `https://courselist.wm.edu/courselist/courseinfo/searchresults?term_code=${term ? term : this.courselistData.terms.latest}&term_subj=${subjectCode}&attr=0&attr2=0&levl=0&status=0&ptrm=0&search=Search`
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -223,7 +244,7 @@ export class Scraper {
             }
         } else { // If no specific subject was given, get all.
             for (const subject of this.courselistData.subjects) {
-                await this.getCourseData(subject, term ? term : this.courselistData.term);
+                await this.getCourseData(subject, term ? term : this.courselistData.terms.latest);
             }
         }
     }
@@ -237,10 +258,10 @@ export class Scraper {
     private createAndSaveClass(classInfo) {
         // Guard clauses
         if (typeof classInfo !== 'object')
-            throw new Error('Invalid classInfo parameter. Must be an array.');
+            throw new ScraperError('Invalid classInfo parameter. Must be an array.');
 
         if (classInfo.length !== 11)
-            throw new Error('Invalid classInfo parameter. Must be an array of length 11.');
+            throw new ScraperError('Invalid classInfo parameter. Must be an array of length 11.');
 
         // Create a new class object and stores in the scraper object under the classData key.
         this.classData.push(new Class(
