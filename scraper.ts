@@ -122,7 +122,7 @@ export class Scraper {
     }
 
     private async httpRequest(url: string, options?: object) {
-        if (typeof options != 'object') throw new ScraperError(`Wrong data type. You passed ${typeof options}.`)
+        if (options && typeof options != 'object') throw new ScraperError(`Wrong data type. You passed ${typeof options}.`)
 
         if (!options) {
             options = {
@@ -322,6 +322,35 @@ export class Scraper {
         }
     }
 
+    public async loadFromCsv(filepath: string) {
+        const lines = fs.readFileSync(filepath).toString().split('\n').splice(1);
+
+        lines.forEach(line => {
+           const seperated = line
+               .replaceAll('"",""', '-')
+               .replaceAll('"', '')
+               .replaceAll(',  ', ' ')
+               .replaceAll(', ', ' ')
+               .replace('[','')
+               .replace(']', '')
+               .split(',')
+
+            this.classData.push(new Class(
+                seperated[0], // CRN
+                seperated[1], // Course ID
+                seperated[2] ? seperated[2].split('-') : [], // Attributes
+                seperated[3], // Title
+                seperated[4], // Instructor
+                parseInt(seperated[5]), // Credits
+                seperated[6], // Time
+                parseInt(seperated[7]), // Projected enrollment
+                parseInt(seperated[8]), // Current Enrollment
+                parseInt(seperated[9]), // Seats Available
+                seperated[10]
+            ))
+        })
+    }
+
     public findClassByCrn(crn: string) {
         for (const classEntry of this.classData) {
             if (classEntry.crn === crn) {
@@ -420,7 +449,7 @@ export class Class {
     }
 
     set courseID(id: string) {
-        this._courseID = id.replace(/(\r\n|\n|\r)/gm, "").trim();
+        this._courseID = id ? id.replace(/(\r\n|\n|\r)/gm, "").trim() : '';
     }
 
     get courseID(): string {
@@ -436,7 +465,7 @@ export class Class {
     }
 
     set title(name: string) {
-        this._title = name.replace(/(\r\n|\n|\r)/gm, "").trim();
+        this._title = name ? name.replace(/(\r\n|\n|\r)/gm, "").trim() : '';
     }
 
     get title(): string {
@@ -444,7 +473,7 @@ export class Class {
     }
 
     set instructor(instructor: string) {
-        this._instructor = instructor.replace(/(\r\n|\n|\r)/gm, "").trim();
+        this._instructor = instructor ? instructor.replace(/(\r\n|\n|\r)/gm, "").trim() : '';
     }
 
     get instructor(): string {
@@ -464,7 +493,7 @@ export class Class {
     }
 
     set times(times: string) {
-        this._times = times.replace(/(\r\n|\n|\r)/gm, "").trim();
+        this._times = times ? times.replace(/(\r\n|\n|\r)/gm, "").trim() : '';
     }
 
     get times(): string {
@@ -529,6 +558,10 @@ export class Class {
      */
     set status(status: string) {
         // Guard clause
+        if (status == undefined) {
+            this._status = 'CLOSED';
+            return;
+        }
         if (status != 'OPEN' && status != 'CLOSED') throw new Error('Incorrect status type. Must be OPEN or CLOSED.')
         this._status = status;
     }
