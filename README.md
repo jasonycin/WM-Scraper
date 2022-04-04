@@ -8,6 +8,10 @@ each class as an object in memory. Feel free to send a pull request with enhance
 In addition, this scrapper **requires setting a user agent with a W&M email address** and sets a **default rate limit of 500 milliseconds**.
 This identifies your requests to the W&M servers and prevents mistakenly overloading the server with requests.
 
+### Documentation
+Documentation is generated using TypeDoc and hosted via GitHub pages.
+[https://heaveria-ns.github.io/WM-Scraper/](https://heaveria-ns.github.io/WM-Scraper/)
+
 ### Table of Contents
 1. 🧑‍🏫 [Usage](#usage)
    1. 👷‍♂️[Installation](#installation)
@@ -88,7 +92,8 @@ await scraper.saveToJson('courses'); // Saves courses.json to current working di
 ```
 
 #### Find Data Easily
-The following functions are provided to filter, map, and return (a) result(s):  
+📖 [Documentation](https://heaveria-ns.github.io/WM-Scraper/)  
+The following functions are provided to filter, map, and return (a) result(s).  
 ❗⚠️ If you already have `.json` file with course data from this library, please [load that data](#load-json-course-data) into the scraper instead of hitting W&M's servers repeatedly.
 
 | Class   | Method                             | Purpose                                                                                                          | Returns  |
