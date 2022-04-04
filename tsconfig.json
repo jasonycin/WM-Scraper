@@ -3,9 +3,9 @@
     "module": "commonjs",
     "target": "es2021",
     "sourceMap": true,
-    "declaration": true
+    "declaration": true,
   },
   "exclude": [
     "node_modules"
-  ]
+  ],
 }

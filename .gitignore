@@ -4,3 +4,6 @@
 /scraper.js
 /scraper.js.map
 test.*
+*.js
+*.js.map
+*.d.ts
