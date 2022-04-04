@@ -6,6 +6,9 @@ const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const winston = require('winston');
 
+/**
+ * Logging configuration. Only logs to console and can be turned off via a scraper object.
+ */
 const logger = require('winston').createLogger({
     transports: [
         new(winston.transports.Console)({
@@ -20,11 +23,18 @@ const logger = require('winston').createLogger({
     )
 })
 
+/**
+ * Object to store rate-limit information including the interval.
+ * Future plan is to implement a fully-fledged queue.
+ */
 export interface IRateLimit {
     _interval: number,
     _lastRequest: number
 }
 
+/**
+ * Object used in the Scraper class to store all the term information and subjects that have been scraped from the Open Course List.
+ */
 export interface IData {
     terms?: {
         latest: number,
@@ -33,6 +43,9 @@ export interface IData {
     subjects?: string[]
 }
 
+/**
+ * Object used in the Class class object to store the information about the class.
+ */
 export interface IJsonClass {
     _crn: number,
     _courseID: string,
@@ -58,6 +71,9 @@ class ScraperError extends Error {
     }
 }
 
+/**
+ * Custom error class for the Error class.
+ */
 class ClassError extends Error {
     constructor(message: string) {
         super(`W&M Class Error: ${message}`);
@@ -66,6 +82,10 @@ class ClassError extends Error {
     }
 }
 
+/**
+ * The main class of the library. This class is used to scrape the W&M Open Course List.
+ * It is recommended to only create one instance of this class and use it throughout your application.
+ */
 export class Scraper {
     private _userAgent: string;
     private _rateLimit: IRateLimit = {
@@ -78,12 +98,20 @@ export class Scraper {
     };
     public classData: Class[] = [];
 
+    /**
+     * Constructor for the Scraper class. The userAgent is required and must be in the form of a W&M email address.
+     * @param userAgent
+     * @param rateLimit
+     */
     constructor(userAgent: string, rateLimit?: number) {
         this.userAgent = userAgent;
 
         if (rateLimit) this.rateLimit = rateLimit;
     }
 
+    /**
+     * The user agent for the scraper. This is required and must be in the form of a W&M email address.
+     */
     public set userAgent(userAgent: string) {
         // User agent must be @email.wm.edu or @wm.edu email address.
         if(!/^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(wm|email.wm)\.edu$/g.test(userAgent)) {
@@ -93,12 +121,15 @@ export class Scraper {
         this._userAgent = userAgent;
     }
 
+    /**
+     * Get the user agent for the scraper.
+     */
     public get userAgent(): string {
         return this._userAgent;
     }
 
     /**
-     * Set a custom rate limit. Default is 500ms.
+     * Set a custom rate limit. Default is 500ms. A warning is given if the rate limit is set too low.
      * You are responsible for setting a reasonable rate limit!! Consider the universities' server impact.
      * @param ms
      */
@@ -116,12 +147,18 @@ export class Scraper {
         return this._rateLimit._interval;
     }
 
+    /**
+     * Set the logging to true or false to enable or disable the Winston logger.
+     */
     public set logging(bool: boolean) {
         if (typeof bool !== 'boolean') throw new ScraperError(`Logging can be set to true or false (boolean). You passed a ${typeof bool} argument.`);
         bool ? logger.silent = false : logger.silent = true;
     }
 
-    private async httpRequest(url: string, options?: object) {
+    /**
+     * Standardize node-fetch HTTP requests and error-handling.
+     */
+    private async httpRequest(url: string, options?: object): Promise<any> {
         if (options && typeof options != 'object') throw new ScraperError(`Wrong data type. You passed ${typeof options}.`)
 
         if (!options) {
@@ -144,7 +181,7 @@ export class Scraper {
      * If so, it halts thread execution for the remaining time.
      * @private
      */
-    private async _logAndExecuteRateLimit() {
+    private async _logAndExecuteRateLimit(): Promise<void> {
         // Calculate time since last request
         const diff = Date.now() - this.rateLimit;
 
@@ -161,8 +198,9 @@ export class Scraper {
 
     /**
      * Retrieves the current term and subject list from the W&M website.
+     * Saves data to the courselistData property in the Scraper class.
      */
-    public async getTermsAndSubjects() {
+    public async getTermsAndSubjects(): Promise<void> {
         // Enforce rate limit
         await this._logAndExecuteRateLimit();
 
@@ -190,11 +228,11 @@ export class Scraper {
     }
 
     /**
-     *
-     * @param subjectCode - If not provided, will extract information for all course subjects.
-     * @param term -
+     * Get the course list for a given term and subject. If no term or subject is passed, the latest term and all subjects are retrieved.
+     * @param subjectCode - Defaults to using all. (Additional HTTP request if not saved in the Scraper class)
+     * @param term - Defaults to using latest. (Additional HTTP request if not saved in the Scraper class)
      */
-    public async getCourseData(subjectCode?: string, term?: number) {
+    public async getCourseData(subjectCode?: string, term?: number): Promise<void> {
         // If no custom term and subject has been defined or gotten via getTermAndSubjects(), attempt to retrieve it.
         if (!this.courselistData.terms.latest && !this.courselistData.subjects) {
             logger.warn('No term or subjects found. Attempting to get data from Open Course List...');
@@ -255,7 +293,7 @@ export class Scraper {
      * @param classInfo
      * @private
      */
-    private createAndSaveClass(classInfo) {
+    private createAndSaveClass(classInfo): void {
         // Guard clauses
         if (typeof classInfo !== 'object')
             throw new ScraperError('Invalid classInfo parameter. Must be an array.');
@@ -282,16 +320,32 @@ export class Scraper {
 
     /**
      * Saves all data contained in the scraper objects classData key to a .csv file.
+     * @example scraper.saveClassData('/path/to/file.csv')
+     * @param saveLocation
      */
-    public async saveToCsv(filename: string) {
+    public async saveToCsv(saveLocation: string) {
+        if (saveLocation.endsWith('.csv') === false) saveLocation += '.csv'; // Add .csv extension if not already present.
+
         const csv = new ObjectsToCsv(this.classData);
-        await csv.toDisk(`./${filename}.csv`);
+        await csv.toDisk(saveLocation);
     }
 
-    public saveToJson(filename: string) {
-        fs.writeFileSync(`./${filename}.json`, JSON.stringify(this.classData, null, 4));
+    /**
+     * Saves all data contained in the scraper objects classData key to a .json file.
+     * @example scraper.saveClassData('/path/to/file.json')
+     * @param saveLocation
+     */
+    public saveToJson(saveLocation: string) {
+        if (saveLocation.endsWith('.json') === false) saveLocation += '.json'; // Add .json extension if not already there.
+        fs.writeFileSync(saveLocation, JSON.stringify(this.classData, null, 4));
     }
 
+    /**
+     * Loads all classes contained in a .json file into the scraper object. Replaces any existing data.
+     * Only use this method if you are sure that the file has been created via the saveToJson() method. Otherwise, it will likely fail.
+     * @example scraper.loadClassData('/path/to/file.json')
+     * @param filepath
+     */
     public async loadFromJson(filepath: string) {
         let data: IJsonClass[];
 
@@ -322,8 +376,17 @@ export class Scraper {
         }
     }
 
-    public async loadFromCsv(filepath: string) {
+    /**
+     * Loads all classes contained in a .csv file into the scraper object. Replaces any existing data.
+     * Only use this method if you are sure that the file has been created via the saveToCsv() method. Otherwise, it will likely fail.
+     * @example scraper.loadFromCsv('/path/to/file.csv')
+     * @param filepath
+     */
+    public async loadFromCsv(filepath: string): Promise<void> {
         const lines = fs.readFileSync(filepath).toString().split('\n').splice(1);
+
+        // Empty current data if present
+        if (this.classData) this.classData = [];
 
         lines.forEach(line => {
            const seperated = line
@@ -351,63 +414,93 @@ export class Scraper {
         })
     }
 
-    public findClassByCrn(crn: string) {
-        for (const classEntry of this.classData) {
-            if (classEntry.crn === crn) {
-                return classEntry;
-            }
-        }
+    /**
+     * Returns an individual class object from the scraper object.
+     * @example scraper.getClassData()
+     */
+    public findClassByCrn(crn: string): Class {
+        for (const classEntry of this.classData) if (classEntry.crn === crn) return classEntry;
     }
 
-    public findClassByCourseID(courseID: string) {
-        for (const classEntry of this.classData) {
-            if (classEntry.courseID === courseID) {
-                return classEntry;
-            }
-        }
+    /**
+     * Returns an individual class object from the scraper object.
+     * @example scraper.getClassData()
+     */
+    public findClassByCourseID(courseID: string): Class {
+        for (const classEntry of this.classData) if (classEntry.courseID === courseID) return classEntry;
     }
 
-    public findClassesByAttribute(attribute: string) {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param attribute
+     */
+    public findClassesByAttribute(attribute: string): Class[] {
         let foundClasses: Class[] = [];
         for (const classEntry of this.classData) {
-            if (classEntry.attributes.includes(attribute)) {
-                foundClasses.push(classEntry);
-            }
+            if (classEntry.attributes.includes(attribute)) foundClasses.push(classEntry);
         }
         return foundClasses;
     }
 
-    public findClassesByInstructor(instructor: string) {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param instructor
+     */
+    public findClassesByInstructor(instructor: string): Class[] {
         // Return an array of classes that match the instructor
         return this.classData.filter(classEntry => classEntry.instructor === instructor);
     }
 
-    public findClassesByCredits(credits: number) {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param credits
+     */
+    public findClassesByCredits(credits: number): Class[] {
         // Return an array of classes that match the credits
         return this.classData.filter(classEntry => classEntry.credits === credits);
     }
 
-    public findClassesByTimes(times: string) {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param times
+     */
+    public findClassesByTimes(times: string): Class[] {
         // Return an array of classes that match the times
         return this.classData.filter(classEntry => classEntry.times === times);
     }
 
-    public findClassesByProjectedEnrollment(projectedEnrollment: number) {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param projectedEnrollment
+     */
+    public findClassesByProjectedEnrollment(projectedEnrollment: number): Class[] {
         // Return an array of classes that match the projected enrollment
         return this.classData.filter(classEntry => classEntry.projectedEnrollment === projectedEnrollment);
     }
 
-    public findClassesByCurrentEnrollment(currentEnrollment: number) {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param currentEnrollment
+     */
+    public findClassesByCurrentEnrollment(currentEnrollment: number): Class[] {
         // Return an array of classes that match the current enrollment
         return this.classData.filter(classEntry => classEntry.currentEnrollment === currentEnrollment);
     }
 
-    public findClassesBySeatsAvailable(seatsAvailable: number) {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param seatsAvailable
+     */
+    public findClassesBySeatsAvailable(seatsAvailable: number): Class[] {
         // Return an array of classes that match the seats available
         return this.classData.filter(classEntry => classEntry.seatsAvailable === seatsAvailable);
     }
 
-    public findClassesByStatus(status: 'OPEN' | 'CLOSED') {
+    /**
+     * Returns an array of class objects from the scraper object.
+     * @param status
+     */
+    public findClassesByStatus(status: 'OPEN' | 'CLOSED'): Class[] {
         // Return an array of classes that match the status
         return this.classData.filter(classEntry => classEntry.status === status);
     }

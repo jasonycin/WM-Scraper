@@ -51,7 +51,7 @@ const scraper = new wm.Scraper('abcdef@wm.edu')
 async function doStuff() {
    /**
     * 1. Get all terms and subjects
-    * ✨ You can now skip this step!
+    * ✨ You can now skip this step with version 2!
     */
    await scraper.getTermsAndSubjects();
    console.log(scraper.courselistData) // Object with terms and subjects
