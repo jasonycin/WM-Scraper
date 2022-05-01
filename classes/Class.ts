@@ -69,7 +69,7 @@ export class Class {
         if (credits === null) {
             this._credits = null;
         } else {
-            this._credits = parseInt(credits.toString().replace(/(\r\n|\n|\r)/gm, "").trim());
+            this._credits = parseFloat(credits.toString().replace(/(\r\n|\n|\r)/gm, "").trim());
         }
     }
 

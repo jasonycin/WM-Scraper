@@ -270,17 +270,17 @@ export class Scraper {
 
         // Create a new class object and stores in the scraper object under the classData key.
         this.classData.push(new Class(
-            classInfo[0],
-            classInfo[1],
-            classInfo[2].split(','),
-            classInfo[3],
-            classInfo[4],
-            classInfo[5],
-            classInfo[6],
-            classInfo[7],
-            classInfo[8],
-            classInfo[9],
-            classInfo[10]
+            classInfo[0], // CRN
+            classInfo[1], // ID
+            classInfo[2].split(','), //Attributes
+            classInfo[3], // Title
+            classInfo[4], // Instructor
+            Number.isInteger(classInfo[5]) ? parseInt(classInfo[5]) : parseFloat(classInfo[5]), // Credits
+            classInfo[6], // Times
+            classInfo[7], // Projected Enrollment
+            classInfo[8], // Current Enrollment
+            classInfo[9], // Seats Available
+            classInfo[10] // Status
         ));
     }
 
