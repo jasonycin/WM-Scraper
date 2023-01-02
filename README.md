@@ -1,3 +1,7 @@
+> 🚨⚠️ **DEPRECATION WARNING** 🚨⚠️  
+> THIS PACKAGE HAS BEEN DEPRECATED.  
+> PLEASE USE [WM-FETCH](https://github.com/jasonycin/wm-fetch) INSTEAD.
+
 # Course Scrapper 🟢🟡
 
 ### Information
